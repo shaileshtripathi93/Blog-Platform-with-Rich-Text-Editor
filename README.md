@@ -1,5 +1,5 @@
 # Blog-Platform-with-Rich-Text-Editor
-
+![Blog-Platform-with-Rich-Text-Editor](https://github.com/shaileshtripathi93/Blog-Platform-with-Rich-Text-Editor/blob/main/Screenshot%202024-11-04%20150512.png)
 # Enhanced Blog Platform
 
 ## Overview
