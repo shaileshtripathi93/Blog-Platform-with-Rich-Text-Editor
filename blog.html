@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enhanced Blog Platform</title>
+    <style>
+        /* Basic styling for the blog platform */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 600px;
+    padding: 20px;
+    background: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+h1, h2 {
+    text-align: center;
+    color: #333;
+}
+
+.new-post, .posts {
+    margin: 20px 0;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+button {
+    padding: 5px 10px;
+    color: white;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+/* Editor styling */
+.editor {
+    height: 300px;
+    margin: 10px 0;
+}
+
+/* Modal styling */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 5px;
+    width: 80%;
+    max-width: 500px;
+    position: relative;
+}
+
+.close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+    </style>
+    <!-- Quill.js Styles -->
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>Blog Platform with Rich Text Editor</h1>
+
+        <!-- New Post Section -->
+        <div class="new-post">
+            <h2>Create a New Post</h2>
+            <input type="text" id="title" placeholder="Title" required>
+
+            <!-- Image Upload -->
+            <input type="file" id="image" accept="image/*" onchange="previewImage()">
+            <img id="image-preview" style="display: none;" alt="Image Preview">
+
+            <!-- Quill Editor -->
+            <div id="editor" class="editor"></div>
+            
+            <button onclick="addPost()">Add Post</button>
+        </div>
+
+        <!-- Blog Posts Section -->
+        <div id="posts" class="posts">
+            <h2>All Posts</h2>
+            <div id="post-list"></div>
+        </div>
+
+        <!-- Modal for Full Post View -->
+        <div id="postModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal()">&times;</span>
+                <h2 id="modal-title"></h2>
+                <img id="modal-image" src="" alt="Post Image" style="max-width: 100%;">
+                <div id="modal-content" class="modal-text"></div>
+                <button onclick="editPost()">Edit Post</button>
+                <button onclick="sharePost()">Share on Social Media</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+    <script>
+        let posts = [];
+        const postsContainer = document.getElementById("post-list");
+        const modal = document.getElementById("postModal");
+        const modalTitle = document.getElementById("modal-title");
+        const modalContent = document.getElementById("modal-content");
+        const modalImage = document.getElementById("modal-image");
+        let currentPostId = null;
+        
+        // Initialize Quill editor
+        const quill = new Quill('#editor', {
+            theme: 'snow',
+            modules: {
+                toolbar: [
+                    [{ header: [1, 2, false] }],
+                    ['bold', 'italic', 'underline'],
+                    ['link', 'image'],
+                    [{ list: 'ordered'}, { list: 'bullet' }],
+                ]
+            }
+        });
+        
+        // Function to add a new post
+        function addPost() {
+            const title = document.getElementById("title").value;
+            const content = quill.root.innerHTML;
+            const imageFile = document.getElementById("image").files[0];
+            if (title && content) {
+                const newPost = {
+                    id: Date.now().toString(),
+                    title,
+                    content,
+                    imageUrl: imageFile ? URL.createObjectURL(imageFile) : null
+                };
+                posts.push(newPost);
+                renderPosts();
+                clearForm();
+            } else {
+                alert("Please enter both title and content!");
+            }
+        }
+        
+        // Function to render all posts
+        function renderPosts() {
+            postsContainer.innerHTML = "";
+            posts.forEach(post => {
+                const postCard = document.createElement("div");
+                postCard.classList.add("post-card");
+                postCard.innerHTML = `<h3>${post.title}</h3><p>${post.content.slice(0, 100)}...</p>`;
+                postCard.onclick = () => openModal(post.id);
+                postsContainer.appendChild(postCard);
+            });
+        }
+        
+        // Function to clear the form inputs
+        function clearForm() {
+            document.getElementById("title").value = "";
+            quill.setContents([]);
+            document.getElementById("image").value = "";
+            document.getElementById("image-preview").style.display = "none";
+        }
+        
+        // Preview image on upload
+        function previewImage() {
+            const imageFile = document.getElementById("image").files[0];
+            const imagePreview = document.getElementById("image-preview");
+            if (imageFile) {
+                imagePreview.src = URL.createObjectURL(imageFile);
+                imagePreview.style.display = "block";
+            }
+        }
+        
+        // Open modal with post details
+        function openModal(id) {
+            currentPostId = id;
+            const post = posts.find(p => p.id === id);
+            modalTitle.textContent = post.title;
+            modalContent.innerHTML = post.content;
+            modalImage.src = post.imageUrl || '';
+            modal.style.display = "flex";
+        }
+        
+        // Close modal
+        function closeModal() {
+            modal.style.display = "none";
+        }
+        
+        // Share post on social media
+        function sharePost() {
+            const post = posts.find(p => p.id === currentPostId);
+            const url = `${window.location.href}?post=${post.id}`;
+            alert(`Share this link: ${url}`);
+        }
+        
+        // Edit post
+        function editPost() {
+            const post = posts.find(p => p.id === currentPostId);
+            document.getElementById("title").value = post.title;
+            quill.root.innerHTML = post.content;
+            modal.style.display = "none";
+        }
+        
+    </script>
+</body>
+</html>
